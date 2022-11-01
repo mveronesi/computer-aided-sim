@@ -1,3 +1,10 @@
 *.sublime-workspace
 *__pycache__
-
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.synctex.gz
+*.pdf

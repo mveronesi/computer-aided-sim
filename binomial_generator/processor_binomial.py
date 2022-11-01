@@ -1,34 +1,38 @@
-from simulator import BinomialGenerator
+from simulators import BinomialGenerator
 import argparse
 from matplotlib import pyplot as plt
 import time
 import numpy as np
 from tqdm import tqdm
-FIGSIZE=(5, 5,)
 
 
 def generate(
         generator: BinomialGenerator,
         n: int,
-        k: int) -> None:
+        k: int,
+        skip: bool = False) -> None:
+    if skip: return
+    print(f'Using {str(generator)} generator...')
     x = np.arange(stop=n+1, dtype=int)
     y = np.zeros(shape=(n+1,), dtype=int)
     start = time.time()
     for _ in tqdm(range(k)):
         y[generator.generate()] += 1
-    print(f'{str(generator)}')
+    y = np.trim_zeros(filt=y, trim='b')
+    x = x[:len(y)]
+    print(f'{repr(generator)}')
     print(f'execution time: {time.time()-start}')
-    fig, ax = plt.subplots(
+    _, ax = plt.subplots(
         nrows=1,
         ncols=1,
-        figsize=FIGSIZE
+        figsize=(7, 7,)
     )
     ax.bar(
         x=x,
         height=y,
         width=0.8
         )
-    ax.set_title(str(generator))
+    ax.set_title(repr(generator)+f'\nk={k}')
     ax.set_xlabel('Value')
     ax.set_ylabel('Probability')
 
@@ -53,23 +57,23 @@ def main(args):
         seed=args.seed,
         method='geometric'
     )
-    print('Using convolutional generator...')
     generate(
         generator=conv_generator,
         n=args.n,
-        k=args.k
+        k=args.k,
+        skip=args.skip_conv
     )
-    print('Using inverse-transform generator...')
     generate(
         generator=inv_generator,
         n=args.n,
-        k=args.k
+        k=args.k,
+        skip=args.skip_inv
     )
-    print('Using geometric generator...')
     generate(
         generator=geom_generator,
         n=args.n,
-        k=args.k
+        k=args.k,
+        skip=args.skip_geom
     )
     plt.show()
 
@@ -102,5 +106,23 @@ if __name__ == '__main__':
         type=int,
         default=42,
         help='Seed for the random generator'
+    )
+    parser.add_argument(
+        '--skip-conv',
+        dest='skip_conv',
+        action='store_true',
+        help='Use this flag to not perform convolutional generation'
+    )
+    parser.add_argument(
+        '--skip-inv',
+        dest='skip_inv',
+        action='store_true',
+        help='Use this flag to not perform inverse-transform generation'
+    )
+    parser.add_argument(
+        '--skip-geom',
+        dest='skip_geom',
+        action='store_true',
+        help='Use this flag to not perform geometric generation'
     )
     main(parser.parse_args())

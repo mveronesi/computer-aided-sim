@@ -26,7 +26,7 @@ all the initial position are randomly selected with uniform distribution, furthe
 
 # Player representation
 
-Players are represented through the struct player, which contains the two coordinate values (non-negative integers), a boolean value which is true if and only if that player is still alive, the number of killed player (non-negative integer).
+Players are represented through the structure player, which contains the two coordinate values (non-negative integers), a boolean value which is true if and only if that player is still alive, the number of killed player (non-negative integer).
 
 
 
@@ -42,41 +42,41 @@ a 2-D numpy array M of size (number_of_players)x(number_of_players), with data t
 
 # Simulation algorithm
 
-begin
+	begin
 
-alive_players = number_of_players
+	alive_players = number_of_players
 
-while alive_players > 1
+	while alive_players > 1
 
-    for i=0 up to number_of_players-1
+		for i=0 up to number_of_players-1
 
-        extract a direction from a uniform random variable
+		    extract a direction from a uniform random variable
 
-        enter in M using the coordinates stored in L[i]
+		    enter in M using the coordinates stored in L[i]
 
-        move the element in M
+		    move the element in M
 
-        if the moved element exits from the boundaries bring it back to the old position
+		    if the moved element exits from the boundaries bring it back to the old position
 
-            check whether the new position is already occupied
+		        check whether the new position is already occupied
 
-                if it is and the index already in there is greater than the player which is moving
+		            if it is and the index already in there is greater than the player which is moving
 
-                    then sobstitute it without any other machinery (it position will be updated)
+		                then substitute it without any other machinery (it position will be updated)
 
-                if it is and the index already in there is lower than the player which is moving
+		            if it is and the index already in there is lower than the player which is moving
 
-                    toss a coin and decide who the winner is
+		                toss a coin and decide who the winner is
 
-                    update the number of killed player in the winner
+		                update the number of killed player in the winner
 
-                    update the alive parameter of the looser
+		                update the alive parameter of the looser
 
-    apply a random shuffle to L
+		apply a random shuffle to L
 
-    count the number of still alive players
+		count the number of still alive players
 
-end
+	end
 
 
 
