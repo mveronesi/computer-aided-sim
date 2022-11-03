@@ -7,9 +7,9 @@ class BinomialGenerator:
         IN: m integer value for which computing the binomial CDF
         OUT: the value of the CDF at point m
         """
-        log_factorial = lambda n: 0 if n==0 else np.sum(np.array(
-            [np.log(i) for i in range(1, n+1)]
-            ))
+        log_factorial = lambda n: 0 if n==0 else np.sum(
+            np.log(np.arange(start=1, stop=n+1, dtype=int))
+        )
         log_binomial = lambda n, k: log_factorial(n) - \
             log_factorial(k) - log_factorial(n-k)
         pdf = np.vectorize(
