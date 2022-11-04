@@ -13,6 +13,23 @@ def simulate(
         seed: int,
         limit: Callable[[int, int], float],
         error: Callable[[float, float], float]) -> dict:
+    """
+    IN:
+    - an integer n, the number of bins and balls
+    - an integer d, the load factor
+    - the seed for the simulator
+    - the theoretical limit formula as a function with input
+      parameters the size of the problem and the load factor
+    - the error metric for the maximum as a function with input
+      parameters the real value and the theoretical one
+    OUT: a dictionary with the following keys:
+    - max: the maximum value for occupancy
+    - min: the min value for occupancy
+    - avg: the avg value for occupancy
+    - limit: the theoretical limit computed using n,d input param
+    - error: the error metric computed with max and limit values
+             of this dictionary
+    """
     simulator = BinBallSimulator(
         n=n,
         d=d,
