@@ -1,6 +1,6 @@
 Input:
 - A positive integer number N, i.e., the size of the problem (N bins, N balls)
-- An integer d>1, i.e., the random load balancing factor
+- An integer d>=1, i.e., the random load balancing factor
 
 Assumptions:
 - N is small enough so that an array of shape (N, ) fits in the memory
@@ -26,6 +26,5 @@ end
 
 This algorithm executes in time O(d*N), with d a small constant, therefore O(N).
 
-Possible extensions:
-- Parallelize the for loop in the main algorithm: the less occupied cell will not be consistent,
-  we should analyze the gain in terms of saved time w.r.t. the difference in the max occupied cell.
+Extensions:
+- ranalyze the time w.r.t. the variation of d

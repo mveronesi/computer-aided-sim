@@ -18,11 +18,12 @@ class Simulator:
         self.arena_size = arena_size
         self.player_speed = player_speed
         self.verbose = verbose
-        self.directions = []
-        self.directions.append(lambda player: (player.row-1 if player.row>0 else player.row, player.col, )) # up
-        self.directions.append(lambda player: (player.row+1 if player.row+1<self.arena_size else player.row, player.col, )) # down
-        self.directions.append(lambda player: (player.row, player.col-1 if player.col > 0 else player.col, )) # left
-        self.directions.append(lambda player: (player.row, player.col+1 if player.col+1<self.arena_size else player.col, )) # right
+        self.directions = (
+            lambda player: (player.row-1 if player.row>0 else player.row, player.col, ), # up
+            lambda player: (player.row+1 if player.row+1<self.arena_size else player.row, player.col, ), # down
+            lambda player: (player.row, player.col-1 if player.col > 0 else player.col, ), # left
+            lambda player: (player.row, player.col+1 if player.col+1<self.arena_size else player.col, ), # right
+        )
         self.random_generator = np.random.default_rng(seed=seed)
         self.battle_rv = lambda: self.random_generator.integers(low=1, high=2, endpoint=True)
         self.direction_rv = lambda: self.random_generator.integers(len(self.directions))
