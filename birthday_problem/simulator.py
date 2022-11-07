@@ -1,4 +1,5 @@
 import numpy as np
+from birthday_distribution import BirthdayDistribution
 
 
 class ConflictSimulator:
@@ -16,6 +17,7 @@ class ConflictSimulator:
         self.m = m
         self.k = k
         self.generator = np.random.default_rng(seed=seed)
+        self.realistic_distribution = BirthdayDistribution()
         if distribution == 'uniform':
             self.distribution = lambda: self.generator.integers(
                 low=1,
@@ -23,7 +25,10 @@ class ConflictSimulator:
                 endpoint=True
             )
         elif distribution == 'realistic':
-            self.distribution = lambda: 0 # TO-DO
+            self.distribution = lambda: self.generator.choice(
+                a=self.realistic_distribution.alphabet,
+                p=self.realistic_distribution.probabilities
+            )
         else:
             raise self.UnhandledDistributionException\
                 (f'{distribution} distribution is not\
