@@ -37,8 +37,11 @@
         if the row L[i][1..m] has a conflict in it then
             ans_2 += 1
      ans_2 /= k  <-- this is the answer to the second question
+     output: ans_1, ans_2
 end```
 
 This algorithm is in the class of complexity O(m*k) (both in memory and time terms).
 
+# Possible extensions
+- Give an approximation of the distribution of the random variable describing the number of occurrences needed to have a conflict
 
