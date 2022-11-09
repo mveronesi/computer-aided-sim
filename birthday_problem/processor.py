@@ -25,18 +25,6 @@ class SeedGenerator(Callable):
         return self.generator.integers(self.k, self.k**3)
 
 
-def plot_distribution(samples: list) -> None:
-    bins = np.arange(
-        start=np.min(samples),
-        stop=np.max(samples) + 1
-    )
-    _, ax = plt.subplots(1, 1, figsize=(7,7))
-    ax.hist(x=samples, bins=bins,)
-    ax.set_title('Number of times in which the first collision happend with a population size')
-    ax.set_xlabel('Population size')
-    ax.set_ylabel('Number of times in which the first collision happend')
-
-
 def main(args):
     get_random_seed = SeedGenerator(
         init_seed=args.seed,
@@ -53,7 +41,15 @@ def main(args):
     )
     avg_value = sim.exec_sim_1()
     print(f'The average size of samples to have a collision is: {int(np.ceil(avg_value))}')
-    plot_distribution(sim.ans_1)
+    bins = np.arange(
+        start=np.min(sim.ans_1_samples),
+        stop=np.max(sim.ans_1_samples) + 1
+    )
+    _, ax = plt.subplots(1, 1, figsize=(7,7))
+    ax.hist(x=sim.ans_1_samples, bins=bins,)
+    ax.set_title('Number of times in which the first collision happend with a population size')
+    ax.set_xlabel('Population size')
+    ax.set_ylabel('Number of times in which the first collision happend')
     # Problem 2
     print('Problem 2')
     m_values = np.arange(
@@ -66,10 +62,9 @@ def main(args):
     limit = np.empty_like(m_values, dtype=np.float64)
     for i in tqdm(range(len(m_values))):
         m = m_values[i]
-        sim = ConflictSimulator(
+        sim.reset(
             m=m,
             k=args.k2,
-            distribution=args.distribution,
             seed=get_random_seed()
         )
         estimated_prob[i] = sim.exec_sim_2()
@@ -125,6 +120,6 @@ if __name__ == '__main__':
         '--seed',
         type=int,
         default=42,
-        help='The seed for the simulation'
+        help='The seed for the simulation (default 42)'
     )
     main(parser.parse_args())

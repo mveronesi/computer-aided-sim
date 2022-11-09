@@ -13,7 +13,7 @@ class ConflictSimulator:
             m: int,             # the (fixed) number of people
             k: int,             # the number of experiments
             distribution: str,  # a str in ['uniform', 'realistic']
-            seed: int,           # seed for the random generator
+            seed: int,          # seed for the random generator
             verbose: bool = False
             ):
         """
@@ -27,31 +27,47 @@ class ConflictSimulator:
         - seed: the seed for the random generator
         - verbose: set to true if you want a progress bar during simulation
         """
+        self.reset(
+            m=m,
+            k=k,
+            seed=seed,
+            distribution=distribution,
+            verbose=verbose
+            )
+        
+    def reset(
+            self,
+            m: int,                    # the (fixed) number of people
+            k: int,                    # the number of experiments
+            seed: int,                 # seed for the random generator
+            distribution: str = None,  # a str in ['uniform', 'realistic']
+            verbose: bool = False):
         self.m = m
         self.k = k
         self.verbose = verbose
         self.generator = np.random.default_rng(seed=seed)
-        if distribution == 'uniform':
-            self.distribution = lambda size: self.generator.integers(
-                low=1,
-                high=365,
-                endpoint=True,
-                size=size
-            )
-        elif distribution == 'realistic':
-            realistic_distribution = BirthdayDistribution()
-            self.distribution = lambda size: self.generator.choice(
-                a=realistic_distribution.alphabet,
-                p=realistic_distribution.probabilities,
-                size=size
-            )
-        else:
-            raise self.UnhandledDistributionException\
-                (f'{distribution} distribution is not\
-                    handled by this class.')
+        if distribution is not None:
+            if distribution == 'uniform':
+                self.distribution = lambda size: self.generator.integers(
+                    low=1,
+                    high=365,
+                    endpoint=True,
+                    size=size
+                )
+            elif distribution == 'realistic':
+                realistic_distribution = BirthdayDistribution()
+                self.distribution = lambda size: self.generator.choice(
+                    a=realistic_distribution.alphabet,
+                    p=realistic_distribution.probabilities,
+                    size=size
+                )
+            else:
+                raise self.UnhandledDistributionException\
+                    (f'{distribution} distribution is not\
+                        handled by this class.')
 
     def exec_sim_1(self) -> float:
-        self.ans_1 = np.empty(shape=(self.k,), dtype=int)
+        self.ans_1_samples = np.empty(shape=(self.k,), dtype=int)
         for j in tqdm(range(self.k)) \
                 if self.verbose else range(self.k):
             conflict = False
@@ -60,11 +76,11 @@ class ConflictSimulator:
             while not conflict:
                 x = self.distribution(size=None)
                 if not conflict and x in S:
-                    self.ans_1[j] = i
+                    self.ans_1_samples[j] = i
                     conflict = True
                 S.add(x)
                 i += 1
-        return np.sum(self.ans_1) / self.k
+        return np.sum(self.ans_1_samples) / self.k
 
     def exec_sim_2(self) -> float:
         L = self.distribution(size=(self.k, self.m, ))
