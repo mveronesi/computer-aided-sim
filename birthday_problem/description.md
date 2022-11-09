@@ -15,30 +15,44 @@
 - a set S for putting in the extracted dates
 
 # Main algorithm
-```begin
+Simulation for answering the first question:
+
+```
+begin
     input: k, m
-    initialize the empty matrix L[1..k][1..m]
-    ans_1 := 0
-    for i:=1 up to k
-        conflict := False
-        j := 0
-        initialize a new empty set S
-        do while j < m or conflict is False
-            x := a random instance generated accordingly to the uniform or realistic distribution
-            if j <= m then
-                L[i][j] := x
-            if x is already present in S and conflict is False then
-                ans_1 += j
-                conflict := True
+    ans = 0
+    repeat k times
+        conflict = False
+        initialize an empty set S
+        i = 0
+        while conflict is False
+            generate an instance x of the random variable according to the given distribution (uniform or realistic)
+            if conflict is False and x is not in S then
+                ans += i
+                conflict = True
             add x to the set S
-    ans_1 /= k  <-- this is the answer to the first question
-    ans_2 := 0
-    for i:=1 up to k
-        if the row L[i][1..m] has a conflict in it then
-            ans_2 += 1
-     ans_2 /= k  <-- this is the answer to the second question
-     output: ans_1, ans_2
-end```
+            i++
+    ans = ans / k
+    output: ans
+end
+```
+
+Simulation for answering the second question:
+```
+begin
+    initialize L, a random matrix of size k x m in which
+    each entry is an i.i.d. sample following the uniform or
+    realistic distribution.
+    ans = 0
+    for i=1 up to k
+        initialize an empty set S
+        put all the values in L to S
+        if the size of S is less than the size of L then there is a conflict
+            ans++
+    ans = ans/k
+    output: ans
+end
+```
 
 This algorithm is in the class of complexity O(m*k) (both in memory and time terms).
 
