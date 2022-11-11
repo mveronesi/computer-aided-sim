@@ -80,7 +80,7 @@ class ConflictSimulator:
                     conflict = True
                 S.add(x)
                 i += 1
-        return np.sum(self.ans_1_samples) / self.k
+        return np.mean(self.ans_1_samples)
 
     def exec_sim_2(self) -> float:
         L = self.distribution(size=(self.k, self.m, ))
