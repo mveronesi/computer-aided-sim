@@ -68,7 +68,7 @@ class ConflictSimulator:
             i = 0
             while not conflict:
                 x = self.distribution(size=None)
-                if not conflict and x in S:
+                if x in S:
                     self.sim_1_samples[j] = i
                     conflict = True
                 S.add(x)
