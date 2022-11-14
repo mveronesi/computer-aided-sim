@@ -3,7 +3,7 @@ from tqdm import tqdm
 import argparse
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy.stats import t, norm
+from scipy import stats
 
 
 class SeedGenerator:
@@ -23,44 +23,41 @@ class SeedGenerator:
         return self.generator.integers(self.k, self.k**3)
 
 
-def main(args):
-    get_random_seed = SeedGenerator(
-        seed=args.seed,
-        k = max(args.k1, args.k2)
-    )
-    # Problem 1
+def problem1(
+        args,
+        #simulator: ConflictSimulator,
+        seed_generator: SeedGenerator) -> None:
     print('Problem 1')
-    sim = ConflictSimulator(
+    simulator = ConflictSimulator(
         m=None, # it is not needed to fix the population 
                 # size in the first problem
         k=args.k1,
         distribution=args.distribution,
-        seed=get_random_seed(),
+        seed=seed_generator(),
         verbose=True
     )
-    avg_value = sim.exec_sim_1()
+    avg_value = simulator.exec_sim_1()
     print(f'The average size of samples to have a collision is: {avg_value}')
-    conf_int = norm.interval(
-        0.99,
+    conf_int = stats.norm.interval(
+        args.confidence,
         avg_value,
-        np.sqrt(np.var(sim.sim_1_samples)/args.k1)
+        np.sqrt(np.var(simulator.sim_1_samples)/args.k1)
     )
-    print(f'The .99 confidence interval is: [{conf_int[0]}, {conf_int[1]}]')
+    print(f'The {args.confidence} confidence interval is: [{conf_int[0]}, {conf_int[1]}]')
     bins = np.arange(
-        start=np.min(sim.sim_1_samples),
-        stop=np.max(sim.sim_1_samples) + 1
+        start=np.min(simulator.sim_1_samples),
+        stop=np.max(simulator.sim_1_samples) + 1
     )
-    indexes = np.digitize(x=sim.sim_1_samples, bins=bins)
-    x = np.zeros_like(bins, dtype=int)
-    for i in indexes:
-        x[i] += 1
-    x/=args.k1
     _, ax = plt.subplots(1, 1, figsize=(7,7))
-    ax.bar(x)
+    ax.hist(x=simulator.sim_1_samples, bins=bins)
     ax.set_title('Number of times in which the first collision happend with a population size')
     ax.set_xlabel('Population size')
     ax.set_ylabel('Number of times in which the first collision happend')
-    # Problem 2
+
+
+def problem2(
+        args,
+        seed_generator: SeedGenerator) -> None:
     print('Problem 2')
     m_values = np.arange(
         start=args.start,
@@ -69,26 +66,50 @@ def main(args):
         dtype=int
     )
     estimated_prob = np.empty_like(m_values, dtype=np.float64)
+    lower_conf_int = np.empty_like(m_values, dtype=np.float64)
+    upper_conf_int = np.empty_like(m_values, dtype=np.float64)
     limit = np.empty_like(m_values, dtype=np.float64)
     for i in tqdm(range(len(m_values))):
         m = m_values[i]
-        sim.reset(
+        simulator = ConflictSimulator(
             m=m,
             k=args.k2,
-            seed=get_random_seed()
+            seed=seed_generator(),
+            distribution=args.distribution,
+            verbose=False
         )
-        estimated_prob[i] = sim.exec_sim_2()
+        p = simulator.exec_sim_2()
+        estimated_prob[i] = p
+        z = stats.norm.ppf(q=(1-args.confidence)/2, loc=0, scale=1)
+        s_hat = np.sqrt(p*(1-p)/args.k2)
+        lower_conf_int[i] = p - z*s_hat
+        upper_conf_int[i] = p + z*s_hat
         limit[i] = 1 - np.exp(-m**2/730)
     _, ax = plt.subplots(1, 1, figsize=(7,7))
-    ax.plot(m_values, estimated_prob)
-    ax.plot(m_values, limit)
+    ax.plot(m_values, estimated_prob, color='red')
+    ax.fill_between(
+        x=m_values,
+        y1=lower_conf_int,
+        y2=upper_conf_int,
+        color='orange'
+        )
+    ax.plot(m_values, limit, color='black', linestyle='dashed')
     ax.legend(
-        ['estimated probability', 'theoretical limit'],
+        ['estimated probability', f'{args.confidence} confidence interval', 'theoretical limit'],
         loc='lower right'
         )
     ax.set_title('Probability of a collision w.r.t. size of the population')
     ax.set_xlabel('Size of the population [m]')
     ax.set_ylabel('Probability of birthday collision')
+
+
+def main(args):
+    seed_generator = SeedGenerator(
+        seed=args.seed,
+        k = max(args.k1, args.k2)
+    )
+    problem1(args, seed_generator)
+    problem2(args, seed_generator)
     plt.show()
 
 
@@ -125,6 +146,12 @@ if __name__ == '__main__':
         default='uniform',
         help='The distribution for generating birthdays,\
             a string in ["uniform", "realistic"]'
+    )
+    parser.add_argument(
+        '--confidence',
+        type=float,
+        default=0.95,
+        help='Percentage of confidence interval (e.g., 0.95, 0.99)'
     )
     parser.add_argument(
         '--seed',

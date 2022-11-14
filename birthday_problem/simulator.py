@@ -5,17 +5,16 @@ from tqdm import tqdm
 
 class ConflictSimulator:
 
-    class UnhandledDistributionException(Exception):
+    class DistributionException(Exception):
         pass
 
     def __init__(
             self,
-            m: int,             # the (fixed) number of people
-            k: int,             # the number of experiments
-            distribution: str,  # a str in ['uniform', 'realistic']
-            seed: int,          # seed for the random generator
-            verbose: bool = False
-            ):
+            m: int,                    # the (fixed) number of people
+            k: int,                    # the number of experiments
+            seed: int,                 # seed for the random generator
+            distribution: str,         # a str in ['uniform', 'realistic']
+            verbose: bool):
         """
         Setup the simulation parameters, which are:
         - m: the number of samples in the population (required only
@@ -27,21 +26,6 @@ class ConflictSimulator:
         - seed: the seed for the random generator
         - verbose: set to true if you want a progress bar during simulation
         """
-        self.reset(
-            m=m,
-            k=k,
-            seed=seed,
-            distribution=distribution,
-            verbose=verbose
-            )
-        
-    def reset(
-            self,
-            m: int,                    # the (fixed) number of people
-            k: int,                    # the number of experiments
-            seed: int,                 # seed for the random generator
-            distribution: str = None,  # a str in ['uniform', 'realistic']
-            verbose: bool = False):
         self.m = m
         self.k = k
         self.verbose = verbose
@@ -64,9 +48,14 @@ class ConflictSimulator:
                         size=size
                         )
             else:
-                raise self.UnhandledDistributionException\
+                raise self.DistributionException\
                     (f'{distribution} distribution is not\
                         handled by this class.')
+    
+    def __check_set__(self) -> None:
+        if self.distribution is None:
+            raise self.UnsettedSimulator\
+                ('You should set the simulator')
 
     def exec_sim_1(self) -> float:
         """
