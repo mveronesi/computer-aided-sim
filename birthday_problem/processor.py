@@ -23,10 +23,7 @@ class SeedGenerator:
         return self.generator.integers(self.k, self.k**3)
 
 
-def problem1(
-        args,
-        #simulator: ConflictSimulator,
-        seed_generator: SeedGenerator) -> None:
+def problem1(args, seed_generator: SeedGenerator) -> None:
     print('Problem 1')
     simulator = ConflictSimulator(
         m=None, # it is not needed to fix the population 
@@ -60,9 +57,7 @@ def problem1(
     ax.set_ylabel('P(X<m)')
 
 
-def problem2(
-        args,
-        seed_generator: SeedGenerator) -> None:
+def problem2(args, seed_generator: SeedGenerator) -> None:
     print('Problem 2')
     m_values = np.arange(
         start=args.start,
