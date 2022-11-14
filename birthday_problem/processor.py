@@ -150,13 +150,11 @@ if __name__ == '__main__':
     parser.add_argument(
         '--confidence',
         type=float,
-        default=0.99,
         help='Percentage of confidence interval (e.g., 0.95, 0.99)'
     )
     parser.add_argument(
         '--seed',
         type=int,
-        default=42,
-        help='The seed for the simulation (default 42)'
+        help='The seed for the simulation'
     )
     main(parser.parse_args())
