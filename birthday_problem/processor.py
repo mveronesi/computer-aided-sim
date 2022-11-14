@@ -86,13 +86,13 @@ def problem2(args, seed_generator: SeedGenerator) -> None:
         upper_conf_int[i] = p + z*s_hat
         limit[i] = 1 - np.exp(-m**2/730)
     _, ax = plt.subplots(1, 1, figsize=(8,8))
-    ax.plot(m_values, estimated_prob, color='red', marker='o')
+    ax.plot(m_values, estimated_prob, color='red', marker='.')
     ax.plot(m_values, limit, color='black', linestyle='dashed')
     ax.fill_between(
         x=m_values,
         y1=lower_conf_int,
         y2=upper_conf_int,
-        color='yellow'
+        color='lightblue'
         )
     ax.legend(
         ['estimated probability', 'theoretical limit', f'{args.confidence} confidence interval'],
