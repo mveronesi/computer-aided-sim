@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 class ConflictSimulator:
 
-    class DistributionException(Exception):
+    class UnhandledDistributionException(Exception):
         pass
 
     def __init__(
@@ -30,32 +30,26 @@ class ConflictSimulator:
         self.k = k
         self.verbose = verbose
         self.generator = np.random.default_rng(seed=seed)
-        if distribution is not None:
-            if distribution == 'uniform':
-                self.distribution = lambda size: \
-                    self.generator.integers(
-                        low=1,
-                        high=365,
-                        endpoint=True,
-                        size=size
-                        )
-            elif distribution == 'realistic':
-                realistic_distribution = BirthdayDistribution()
-                self.distribution = lambda size: \
-                    self.generator.choice(
-                        a=realistic_distribution.alphabet,
-                        p=realistic_distribution.probabilities,
-                        size=size
-                        )
-            else:
-                raise self.DistributionException\
-                    (f'{distribution} distribution is not\
-                        handled by this class.')
-    
-    def __check_set__(self) -> None:
-        if self.distribution is None:
-            raise self.UnsettedSimulator\
-                ('You should set the simulator')
+        if distribution == 'uniform':
+            self.distribution = lambda size: \
+                self.generator.integers(
+                    low=1,
+                    high=365,
+                    endpoint=True,
+                    size=size
+                    )
+        elif distribution == 'realistic':
+            realistic_distribution = BirthdayDistribution.get()
+            self.distribution = lambda size: \
+                self.generator.choice(
+                    a=realistic_distribution.alphabet,
+                    p=realistic_distribution.probabilities,
+                    size=size
+                    )
+        else:
+            raise self.UnhandledDistributionException\
+                (f'{distribution} distribution is not\
+                    handled by this class.')
 
     def exec_sim_1(self) -> float:
         """

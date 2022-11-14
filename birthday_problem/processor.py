@@ -3,7 +3,7 @@ from tqdm import tqdm
 import argparse
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy import stats
+import scipy.stats
 
 
 class SeedGenerator:
@@ -38,21 +38,26 @@ def problem1(
     )
     avg_value = simulator.exec_sim_1()
     print(f'The average size of samples to have a collision is: {avg_value}')
-    conf_int = stats.norm.interval(
+    conf_int = scipy.stats.norm.interval(
         args.confidence,
         avg_value,
         np.sqrt(np.var(simulator.sim_1_samples)/args.k1)
     )
     print(f'The {args.confidence} confidence interval is: [{conf_int[0]}, {conf_int[1]}]')
-    bins = np.arange(
-        start=np.min(simulator.sim_1_samples),
-        stop=np.max(simulator.sim_1_samples) + 1
-    )
-    _, ax = plt.subplots(1, 1, figsize=(7,7))
-    ax.hist(x=simulator.sim_1_samples, bins=bins)
-    ax.set_title('Number of times in which the first collision happend with a population size')
-    ax.set_xlabel('Population size')
-    ax.set_ylabel('Number of times in which the first collision happend')
+    values, counts = np.unique(simulator.sim_1_samples, return_counts=True)
+    counts = counts/args.k1
+    max_value = values[np.argmax(counts)]
+    _, ax = plt.subplots(1, 1, figsize=(8,8))
+    ax.bar(values, counts)
+    ax.axvline(x=max_value, color='red')
+    ax.set_title('Estimated PDF of the number of people needed to have a birthday collision')
+    ax.set_xlabel('Population size [m]')
+    ax.set_ylabel('P(X=m)')
+    _, ax = plt.subplots(1, 1, figsize=(8,8))
+    ax.plot(np.cumsum(counts))
+    ax.set_title('Estimated CDF of the number of people needed to have a birthday collision')
+    ax.set_xlabel('Population size [m]')
+    ax.set_ylabel('P(X<m)')
 
 
 def problem2(
@@ -80,22 +85,22 @@ def problem2(
         )
         p = simulator.exec_sim_2()
         estimated_prob[i] = p
-        z = stats.norm.ppf(q=(1-args.confidence)/2, loc=0, scale=1)
+        z = scipy.stats.norm.ppf(q=(1-args.confidence)/2)
         s_hat = np.sqrt(p*(1-p)/args.k2)
         lower_conf_int[i] = p - z*s_hat
         upper_conf_int[i] = p + z*s_hat
         limit[i] = 1 - np.exp(-m**2/730)
-    _, ax = plt.subplots(1, 1, figsize=(7,7))
-    ax.plot(m_values, estimated_prob, color='red')
+    _, ax = plt.subplots(1, 1, figsize=(8,8))
+    ax.plot(m_values, estimated_prob, color='red', marker='o')
+    ax.plot(m_values, limit, color='black', linestyle='dashed')
     ax.fill_between(
         x=m_values,
         y1=lower_conf_int,
         y2=upper_conf_int,
-        color='orange'
+        color='yellow'
         )
-    ax.plot(m_values, limit, color='black', linestyle='dashed')
     ax.legend(
-        ['estimated probability', f'{args.confidence} confidence interval', 'theoretical limit'],
+        ['estimated probability', 'theoretical limit', f'{args.confidence} confidence interval'],
         loc='lower right'
         )
     ax.set_title('Probability of a collision w.r.t. size of the population')
@@ -150,7 +155,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--confidence',
         type=float,
-        default=0.95,
+        default=0.99,
         help='Percentage of confidence interval (e.g., 0.95, 0.99)'
     )
     parser.add_argument(
