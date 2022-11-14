@@ -48,47 +48,58 @@ class ConflictSimulator:
         self.generator = np.random.default_rng(seed=seed)
         if distribution is not None:
             if distribution == 'uniform':
-                self.distribution = lambda size: self.generator.integers(
-                    low=1,
-                    high=365,
-                    endpoint=True,
-                    size=size
-                )
+                self.distribution = lambda size: \
+                    self.generator.integers(
+                        low=1,
+                        high=365,
+                        endpoint=True,
+                        size=size
+                        )
             elif distribution == 'realistic':
                 realistic_distribution = BirthdayDistribution()
-                self.distribution = lambda size: self.generator.choice(
-                    a=realistic_distribution.alphabet,
-                    p=realistic_distribution.probabilities,
-                    size=size
-                )
+                self.distribution = lambda size: \
+                    self.generator.choice(
+                        a=realistic_distribution.alphabet,
+                        p=realistic_distribution.probabilities,
+                        size=size
+                        )
             else:
                 raise self.UnhandledDistributionException\
                     (f'{distribution} distribution is not\
                         handled by this class.')
 
     def exec_sim_1(self) -> float:
-        self.ans_1_samples = np.empty(shape=(self.k,), dtype=int)
-        for j in tqdm(range(self.k)) \
-                if self.verbose else range(self.k):
+        """
+        Compute the average number of people needed to produce
+        the first birthday collision.
+        It repeat the experiment k times and produce as output
+        an array A of size k with all the results
+        (i.e., A[i] is the number of people needed to produce
+        the first collision in the experiment i in {1..k}).
+        It returns the average of that array
+        """
+        self.sim_1_samples = np.empty(shape=(self.k,), dtype=int)
+        for j in tqdm(range(self.k)) if self.verbose else range(self.k):
             conflict = False
             S = set()
             i = 0
             while not conflict:
                 x = self.distribution(size=None)
                 if not conflict and x in S:
-                    self.ans_1_samples[j] = i
+                    self.sim_1_samples[j] = i
                     conflict = True
                 S.add(x)
                 i += 1
-        return np.mean(self.ans_1_samples)
+        return np.mean(self.sim_1_samples)
 
     def exec_sim_2(self) -> float:
-        L = self.distribution(size=(self.k, self.m, ))
-        self.ans_2 = 0
-        for i in tqdm(range(self.k)) \
-                if self.verbose else range(self.k):
-            S = np.unique(L[i, :])
-            if len(S) < self.m:
-                self.ans_2 += 1
-        self.ans_2 /= self.k
-        return self.ans_2
+        """
+        Compute the probability of a conflict in function of
+        the population size [m].
+        """
+        accumulator = 0
+        for _ in tqdm(range(self.k)) if self.verbose else range(self.k):
+            L = self.distribution(size=(self.m, ))
+            S = np.unique(L)
+            accumulator += int(len(S) < len(L))
+        return accumulator/self.k
