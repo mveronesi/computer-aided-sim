@@ -6,10 +6,11 @@ from matplotlib import pyplot as plt
 ARGS = {
     'utilization': 0.1,
     'service_distribution': 'exp',
-    'endtime': 1000,
+    'endtime': 10000,
     'steady_batch_size': 100,
-    'transient_batch_size': 10,
+    'transient_batch_size': 100,
     'transient_tolerance': 1e-3,
+    'confidence': 0.95,
     'seed': 42,
     'verbose': False
 }
@@ -23,10 +24,11 @@ def main(args):
         steady_batch_size=args['steady_batch_size'],
         transient_batch_size=args['transient_batch_size'],
         transient_tolerance=args['transient_tolerance'],
+        confidence=args['confidence'],
         seed=args['seed'],
         verbose=args['verbose']
     )
-    sim.exec(collect_means='departure')
+    mean, conf_int = sim.exec(collect='departure')
     _, ax = plt.subplots(
         nrows=2,
         ncols=1,

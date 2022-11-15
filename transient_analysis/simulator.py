@@ -1,6 +1,7 @@
 import numpy as np
 from pandas import Series
 from typing import Callable
+from scipy.stats import t, norm
 
 
 class Client:
@@ -40,10 +41,12 @@ class QueueSimulator:
             transient_batch_size: int,
             steady_batch_size: int,
             transient_tolerance: float,
+            confidence: float,
             seed: int,
             verbose: bool):
         self.users = 0
         self.time = 0
+        self.confidence = confidence
         self.transient = True
         self.transient_batch_size = transient_batch_size
         self.steady_batch_size = steady_batch_size
@@ -148,24 +151,51 @@ class QueueSimulator:
             # execute the next event
             value = next_event['action']()
             if next_event['name'] == collect:
-                self.means.append(value)
+                self.values.append(value)
 
-    def exec(self, collect_means: str) -> None:
-        self.means = list()
-        n = 0
-        while self.time < self.endtime:
-            self.collect_batch(collect=collect_means)
-            n += 1
-            self.cumulative_means = Series(data=self.means)\
-                                    .expanding() \
+    def confidence_interval(self, start: int=0) -> tuple[float, tuple[float, float]]:
+        self.update_cumulative_means(start=start)
+        values = self.cumulative_means
+        n = len(values)
+        mean = np.mean(values)
+        std = np.std(values, ddof=1)/np.sqrt(n)
+        if n < 30:
+            return mean, t.interval(self.confidence, n-1, mean, std)
+        else:
+            return mean, norm.interval(self.confidence, mean, std)
+
+    def update_cumulative_means(self, start: int=0) -> None:
+        values = np.array(self.values)[start:]
+        self.cumulative_means = Series(data=values)\
+                                    .expanding()\
                                     .mean()\
                                     .values
-            if (len(self.cumulative_means) > 1):
-                relative_diff = np.abs(self.cumulative_means[-1] -\
-                    self.cumulative_means[-2]) / \
-                        self.cumulative_means[-1]
-                if self.transient \
-                and relative_diff < self.transient_tolerance:
+
+    def exec(self, collect: str) -> tuple[float, tuple[float, float]]:
+        # removing transient state
+        self.values = list()
+        n = 0
+        while self.transient == True:
+            self.collect_batch(collect=collect)
+            n += 1
+            self.update_cumulative_means()
+            if len(self.cumulative_means) > 1:
+                relative_diff = np.abs(self.cumulative_means[-1] \
+                    - self.cumulative_means[-2]) / self.cumulative_means[-1]
+                if relative_diff < self.transient_tolerance:
                     self.transient = False
-                    self.transient_end = self.transient_batch_size*n
-                    n = 0
+                    self.transient_end = n*self.transient_batch_size
+        print(f'Collected {n} batches for removing transient')
+        # collecting the first 10 batches
+        n = 0
+        while n<10:
+            self.collect_batch(collect=collect)
+            n += 1
+        mean, conf_int = self.confidence_interval(start=self.transient_end)
+        while np.abs(conf_int[0]-conf_int[1])/mean > 1-self.confidence:
+            self.collect_batch(collect=collect)
+            mean, conf_int = self.confidence_interval(start=self.transient_end)
+            n += 1
+        self.update_cumulative_means(start=0)
+        print(f'Collected other {n} batches')
+        return mean, conf_int
