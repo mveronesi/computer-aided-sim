@@ -1,4 +1,5 @@
 import numpy as np
+from pandas import Series
 from typing import Callable
 
 
@@ -24,12 +25,12 @@ class QueueSimulator:
     def hyperexponential2(
             self,
             p: np.float128,
-            u1: np.float128,
-            u2: np.float128) -> np.float128:
-        exp1 = lambda: self.generator.exponential(u1)
-        exp2 = lambda: self.generator.exponential(u2)
-        uniform = self.generator.uniform()
-        return exp1() if uniform < p else exp2()
+            mu1: np.float128,
+            mu2: np.float128) -> np.float128:
+        exp1 = lambda: self.generator.exponential(mu1)
+        exp2 = lambda: self.generator.exponential(mu2)
+        u = self.generator.uniform()
+        return exp1() if u < p else exp2()
 
     def __init__(
             self,
@@ -66,8 +67,8 @@ class QueueSimulator:
             self.service_distribution = lambda: \
                 self.hyperexponential2(
                     p=0.9,
-                    u1=1-1/np.sqrt(2),
-                    u2=9/np.sqrt(2)+1
+                    mu1=1-1/np.sqrt(2),
+                    mu2=9/np.sqrt(2)+1
                 )
         else:
             raise self.UnhandledServiceDistribution(
@@ -136,39 +137,35 @@ class QueueSimulator:
                 )
         return delay
 
-    def collect_batch(self, collect: str) -> float:
+    def collect_batch(self, collect: str) -> None:
         batch_size = self.transient_batch_size \
             if self.transient else self.steady_batch_size
-        total = 0
-        count = 0
-        while count < batch_size:
-            self.fes.sort(key=lambda x: x['time'])
-            next_event = self.fes.pop(0)
+        for _ in range(batch_size):
+            self.fes.sort(key=lambda x: x['time'], reverse=True)
+            next_event = self.fes.pop()
             # advance the simulator in time to execute the next event
             self.time = next_event['time']
             # execute the next event
             value = next_event['action']()
             if next_event['name'] == collect:
-                total += value
-                count += 1
-        return total/count
+                self.means.append(value)
 
-    def exec(self) -> int:
-        self.cumulative_means = list()
-        old_mean = 0
-        count = 0
+    def exec(self, collect_means: str) -> None:
+        self.means = list()
         n = 0
-        cumulative_mean = 0
-        while (self.time < self.endtime):
-            current_mean = self.collect_batch(collect='arrival')
-            cumulative_mean = n/(n+1)*cumulative_mean + 1/(n+1)*current_mean
-            self.cumulative_means.append(cumulative_mean)
-            if count < 100 and self.transient:
-                if abs(cumulative_mean-old_mean) < self.transient_tolerance:
-                    count += 1
-                else:
-                    count = 0
-            else:
-                self.transient = False
-            old_mean = cumulative_mean
-        return count
+        while self.time < self.endtime:
+            self.collect_batch(collect=collect_means)
+            n += 1
+            self.cumulative_means = Series(data=self.means)\
+                                    .expanding() \
+                                    .mean()\
+                                    .values
+            if (len(self.cumulative_means) > 1):
+                relative_diff = np.abs(self.cumulative_means[-1] -\
+                    self.cumulative_means[-2]) / \
+                        self.cumulative_means[-1]
+                if self.transient \
+                and relative_diff < self.transient_tolerance:
+                    self.transient = False
+                    self.transient_end = self.transient_batch_size*n
+                    n = 0
