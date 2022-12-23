@@ -53,7 +53,6 @@ class HawkesSimulator:
                 self.time = next_time
                 gamma = gamma_new
             if p < 1e-6:
-                print('ALLAHUAKBAR')
                 print(self.time)
                 print(gamma)
                 print(gamma_new)
