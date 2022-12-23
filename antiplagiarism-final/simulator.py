@@ -47,9 +47,9 @@ class AntiPlagiarismSimulator:
             window_size: int):
         self.window_size = window_size
         self.text_lines = FileReaderSingleton.readlines(filepath)
-        self.processed = False
+        self.process_text()
 
-    def process(self):
+    def process_text(self):
         self.text_lines = pd.Series(self.text_lines) \
                     .apply(self.remove_punctuation) \
                     .apply(lambda s: str.lower(s[:-1]))
@@ -65,11 +65,14 @@ class AntiPlagiarismSimulator:
                         .apply(' '.join, axis=1) 
         self.distinct_sentences = pd.Series(pd.unique(self.sentences))
         self.set_distinct_sentences = set(self.distinct_sentences)
-        self.processed = True
 
     def store_hash_sentences(self, hash_dim: int):
         self.hash_sentences = self.distinct_sentences.apply(
             lambda s: AntiPlagiarismSimulator.compute_hash(s, hash_dim)
             )
-        self.distinct_hash_sentences = set(self.hash_sentences)
-        
+        self.distinct_hash_sentences = pd.unique(self.hash_sentences)
+        self.set_distinct_hash_sentences = set(self.distinct_hash_sentences)
+    
+    def false_positive_probability(self, hash_dim: int) -> float:
+        self.store_hash_sentences(hash_dim)
+        return len(self.distinct_hash_sentences) / hash_dim
