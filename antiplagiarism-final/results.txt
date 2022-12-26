@@ -1,0 +1,18 @@
+##### Inputs #####
+The sentence size is 6.
+
+##### Preliminary study #####
+The number of distinct sentences is 96532.
+The average sentence size is 100.65 Bytes.
+
+##### Set of sentences ######
+The set which stores the sentences is 13.27 MegaBytes.
+
+##### Fingerprint set #####
+Bexp is 33 bits.
+Bteo is 33 bits.
+The false positive probability, when the bits used for the fingerprint is 33, is in the order of magnitude of 10^-4.
+
+##### Bit string array #####
+
+##### Bloom filters #####
