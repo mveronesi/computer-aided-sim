@@ -6,19 +6,6 @@ from matplotlib import pyplot as plt
 import atexit
 
 
-class SeedGenerator:
-    def __init__(self, size: int, seed: int):
-        self.low = size
-        self.high = size**3
-        self.generator = np.random.default_rng(seed)
-
-    def __call__(self) -> int:
-        return self.generator.integers(
-            low=self.low,
-            high=self.high
-        )
-
-
 def order_of_magnitude(number: float) -> int:
     return int(np.log10(number))
 
@@ -253,11 +240,5 @@ if __name__ == '__main__':
         type=int,
         default=6,
         help='Fixed length of the sentences.'
-    )
-    parser.add_argument(
-        '--seed',
-        type=int,
-        default=42,
-        help='Random seed.'
     )
     main(parser.parse_args())
