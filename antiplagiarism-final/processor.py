@@ -111,7 +111,9 @@ def optional_part(
         theoretical_n_elements.append(theoretical_size())
         i += 1
         if i >= stop: break
-    return np.array(theoretical_n_elements)
+    theoretical_n_elements = np.array(theoretical_n_elements)
+    absolute_error = np.abs(theoretical_n_elements - np.arange(start=1, stop=stop+1))
+    return absolute_error
     
 
 def main(args):
@@ -224,16 +226,15 @@ of 10^{order_of_magnitude(false_positive_prob)}.')
     b = bits_exps[-1]
     k = k_opts[-1]
     size = int(np.exp2(b))
-    stop = 10
-    n_elements_teo = optional_part(simulator=simulator, size=size, k=k, stop=stop)
-    print(n_elements_teo)
+    stop = 20
+    error = optional_part(simulator=simulator, size=size, k=k, stop=stop)
     n_elements_exp = np.arange(start=1, stop=stop+1)
     _, ax = plt.subplots(1, 1, figsize=(7,7))
-    ax.plot(n_elements_exp, n_elements_teo, marker='o')
+    ax.plot(n_elements_exp, error, marker='o')
     ax.set_xticks(n_elements_exp)
-    ax.set_xlabel('Effective number of stored elements')
-    ax.set_ylabel('Theoretical number of stored elements')
-    ax.set_title('Number of stored elements (actual vs theoretical)')
+    ax.set_xlabel('Number of stored elements')
+    ax.set_ylabel('Absolute error')
+    ax.set_title('Accuracy of the formula for computing the number of stored elements')
     plt.show(block=False)
     input('Press enter to close all the figures')
 
