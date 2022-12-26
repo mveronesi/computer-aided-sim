@@ -49,7 +49,7 @@ class AntiPlagiarismSimulator:
         self.text_lines = FileReaderSingleton.readlines(filepath)
         self.process_text()
 
-    def process_text(self):
+    def process_text(self) -> None:
         self.text_lines = pd.Series(self.text_lines) \
                     .apply(self.remove_punctuation) \
                     .apply(lambda s: str.lower(s[:-1]))
@@ -66,13 +66,53 @@ class AntiPlagiarismSimulator:
         self.distinct_sentences = pd.Series(pd.unique(self.sentences))
         self.set_distinct_sentences = set(self.distinct_sentences)
 
-    def store_hash_sentences(self, hash_dim: int):
-        self.hash_sentences = self.distinct_sentences.apply(
+    def store_hash_sentences(
+            self,
+            hash_dim: int,
+            shift: int|None = None
+            ) -> np.ndarray:
+        distinct_sentences = self.distinct_sentences
+        if shift is not None:
+            distinct_sentences = distinct_sentences.apply(
+                lambda s: s+str(shift)
+            )
+        self.hash_sentences = distinct_sentences.apply(
             lambda s: AntiPlagiarismSimulator.compute_hash(s, hash_dim)
             )
         self.distinct_hash_sentences = pd.unique(self.hash_sentences)
         self.set_distinct_hash_sentences = set(self.distinct_hash_sentences)
+        return self.distinct_hash_sentences
     
-    def false_positive_probability(self, hash_dim: int) -> float:
-        self.store_hash_sentences(hash_dim)
-        return len(self.distinct_hash_sentences) / hash_dim
+    def store_bitstring(
+            self,
+            size: int,
+            shift: int|None = None
+            ) -> np.ndarray:
+        """
+        IN:
+            - size: the size of the bitstring array
+            - shift: the shift for the strings, before hashing
+        OUT:
+            - the stored bitstring array
+        """
+        self.store_hash_sentences(hash_dim=size, shift=shift)
+        self.bitstring = np.zeros(shape=(size,), dtype=bool)
+        self.bitstring[self.distinct_hash_sentences] = True
+        return self.bitstring
+
+    def store_bloom_filter(
+            self,
+            k: int,
+            size: int) -> np.ndarray:
+        """
+        IN:
+            - k: number of hash functions
+            - size: size of the bit array, in bits
+        OUT:
+            - the stored bloom filter
+        """
+        self.bloom_filter = np.zeros(shape=(size,), dtype=bool)
+        for i in range(k):
+            bitstring = self.store_bitstring(size=size, shift=i)
+            self.bloom_filter += bitstring # OR function
+        return self.bloom_filter
