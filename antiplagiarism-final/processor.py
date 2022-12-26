@@ -3,6 +3,7 @@ from pympler.asizeof import asizeof
 import numpy as np
 from argparse import ArgumentParser
 from matplotlib import pyplot as plt
+import atexit
 
 
 class SeedGenerator:
@@ -88,6 +89,30 @@ def theoretical_false_positive(m: int, n: int, k: int) -> float:
 def k_opt(m: int, n: int) -> int:
     return int(np.ceil((n/m)*np.log(2)))
 
+
+def optional_part(
+        simulator: AntiPlagiarismSimulator,
+        size: int,
+        k: int,
+        stop: int
+        ) -> np.ndarray:
+    bloom_filter = np.zeros(shape=(size,), dtype=bool)
+    theoretical_size = lambda: -size/k * np.log(1-bloom_filter.sum()/size)
+    theoretical_n_elements = []
+    i = 0
+    for sentence in simulator.distinct_sentences:
+        for j in range(k):
+            h = simulator.compute_hash(
+                s=sentence,
+                hash_dim=size,
+                shift=j
+                )
+            bloom_filter[h] = True
+        theoretical_n_elements.append(theoretical_size())
+        i += 1
+        if i >= stop: break
+    return np.array(theoretical_n_elements)
+    
 
 def main(args):
     print('##### Inputs #####')
@@ -196,15 +221,30 @@ of 10^{order_of_magnitude(false_positive_prob)}.')
     ax.set_xlabel('Exponent of the number of bits')
     ax.legend(('Theoretical', 'Experimental',))
     ax.set_title('Probability of false positive using the optimal number of hash functions')
-    plt.show()
+    b = bits_exps[-1]
+    k = k_opts[-1]
+    size = int(np.exp2(b))
+    stop = 10
+    n_elements_teo = optional_part(simulator=simulator, size=size, k=k, stop=stop)
+    print(n_elements_teo)
+    n_elements_exp = np.arange(start=1, stop=stop+1)
+    _, ax = plt.subplots(1, 1, figsize=(7,7))
+    ax.plot(n_elements_exp, n_elements_teo, marker='o')
+    ax.set_xticks(n_elements_exp)
+    ax.set_xlabel('Effective number of stored elements')
+    ax.set_ylabel('Theoretical number of stored elements')
+    ax.set_title('Number of stored elements (actual vs theoretical)')
+    plt.show(block=False)
+    input('Press enter to close all the figures')
 
 
 if __name__ == '__main__':
+    atexit.register(lambda: plt.close('all'))
     parser = ArgumentParser()
     parser.add_argument(
         '--filepath',
         type=str,
-        default='/home/mveronesi/computer-aided-sim/antiplagiarism-final/commedia.txt',
+        required=True,
         help='File source for the text used in the antiplagiarism system.'
     )
     parser.add_argument(

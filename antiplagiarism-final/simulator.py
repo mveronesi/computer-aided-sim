@@ -36,7 +36,11 @@ class AntiPlagiarismSimulator:
             )
 
     @staticmethod
-    def compute_hash(s: str, hash_dim: int) -> int:
+    def compute_hash(
+            s: str,
+            hash_dim: int,
+            shift: int|None) -> int:
+        s = s+str(shift) if shift is not None else s
         s_hash = hashlib.md5(s.encode('utf-8'))
         int_hash = int(s_hash.hexdigest(), 16)
         return int_hash % hash_dim
@@ -71,13 +75,8 @@ class AntiPlagiarismSimulator:
             hash_dim: int,
             shift: int|None = None
             ) -> np.ndarray:
-        distinct_sentences = self.distinct_sentences
-        if shift is not None:
-            distinct_sentences = distinct_sentences.apply(
-                lambda s: s+str(shift)
-            )
-        self.hash_sentences = distinct_sentences.apply(
-            lambda s: AntiPlagiarismSimulator.compute_hash(s, hash_dim)
+        self.hash_sentences = self.distinct_sentences.apply(
+            lambda s: AntiPlagiarismSimulator.compute_hash(s, hash_dim, shift)
             )
         self.distinct_hash_sentences = pd.unique(self.hash_sentences)
         self.set_distinct_hash_sentences = set(self.distinct_hash_sentences)
