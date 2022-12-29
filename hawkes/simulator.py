@@ -21,12 +21,12 @@ class ThinningSimulator:
         active_points = self.infected[start:time].sum()
         return self.lam_uni*active_points
 
-    def intervention_factor(self) -> float:
+    def rho(self) -> float:
         rho = 1
         if self.interventions and self.time >= 20:
             infections = self.infected[int(self.time)-1]
             deaths = int(np.ceil(self.death_rate*infections))
-            rho = max(1, deaths / 100)
+            rho = max(1, deaths / self.intervention_factor)
         tn = int(self.time)
         if tn < self.end_time:
             self.rho_history[tn] = rho
@@ -41,6 +41,7 @@ class ThinningSimulator:
             active_thres_uni: int,
             death_rate: float,
             interventions: bool,
+            intervention_factor: int,
             seed: int):
         self.generator = np.random.default_rng(seed)
         self.m = m
@@ -49,7 +50,7 @@ class ThinningSimulator:
         self.active_thres_uni = active_thres_uni
         self.death_rate = death_rate
         self.interventions = interventions
-        self.rho = self.intervention_factor
+        self.intervention_factor = intervention_factor
         self.lam_uni = 1/active_thres_uni
         self.end_time = end_time
         self.sigma = lambda t: 20 if t <= 10 else 0
