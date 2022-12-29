@@ -162,12 +162,15 @@ def experiment(seed_generator: SeedGenerator, k: int, args):
 def main(args):
     tmp = args.intervention_factor
     generator = SeedGenerator(k=args.k, seed=args.seed)
-    if args.skip_part_1 == False:
-        print('Part 1')
+    print('Part 1')
+    for h in ('uniform', 'exponential',):
+        args.h = h
         args.interventions = False
         args.intervention_factor = 1
         args.end_time = 100
         experiment(seed_generator=generator, k=args.k, args=args)
+    print('Part 2')
+    args.h = 'uniform'
     args.interventions = True
     args.intervention_factor = tmp
     args.end_time = 365
@@ -179,12 +182,6 @@ def main(args):
 if __name__ == '__main__':
     atexit.register(lambda: plt.close('all'))
     parser = ArgumentParser()
-    parser.add_argument(
-        '--h',
-        type=str,
-        default='uniform',
-        help='String in ["uniform", "exponential"].'
-    )
     parser.add_argument(
         '--m',
         type=int,
@@ -224,13 +221,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--intervention_factor',
         type=int,
-        default=50,
+        default=32,
         help='Factor of the intervention, the lower the number, the higher are the interventions.'
-    )
-    parser.add_argument(
-        '--skip_part_1',
-        action='store_true',
-        help='Use this flag to skip part 1 of the assignment.'
     )
     parser.add_argument(
         '--seed',
