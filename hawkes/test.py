@@ -1,4 +1,6 @@
-import numpy as np
+def fun()-> tuple[float, float, float]:
+    t = (1, 2)
+    return 3, *t
 
-a = np.arange(start=20, stop=0, step=-1)
-print(a)
+a, b, c = fun()
+print(a, b, c)

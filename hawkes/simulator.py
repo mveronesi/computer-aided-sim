@@ -52,7 +52,7 @@ class ThinningSimulator:
         self.lam_uni = 1/active_thres_uni
         self.end_time = end_time
         self.sigma = lambda t: 20 if t <= 10 else 0
-        self.infected = np.zeros(shape=(end_time,), dtype=int)
+        self.infected = np.zeros(shape=(end_time,), dtype=np.int64)
         self.rho_history = np.zeros(shape=(end_time,), dtype=float)
         if h == 'uniform':
             self.sum_h = self.sum_h_uni
