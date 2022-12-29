@@ -2,6 +2,7 @@ from simulator import ThinningSimulator
 from argparse import ArgumentParser
 from matplotlib import pyplot as plt
 import numpy as np
+import atexit
 from time import time
 
 
@@ -13,6 +14,7 @@ def main(args):
         end_time=args.end_time,
         active_thres_uni=args.active_threshold,
         death_rate=args.death_rate,
+        interventions=args.interventions,
         seed=args.seed
     )
     start = time()
@@ -43,6 +45,7 @@ def main(args):
 
 
 if __name__ == '__main__':
+    atexit.register(lambda: plt.close('all'))
     parser = ArgumentParser()
     parser.add_argument(
         '--h',
@@ -77,8 +80,13 @@ if __name__ == '__main__':
     parser.add_argument(
         '--end_time',
         type=int,
-        default=100,
+        default=365,
         help='Maximum number of days for the simulation.'
+    )
+    parser.add_argument(
+        '--interventions',
+        action='store_true',
+        help='Add interventions after day 20.'
     )
     parser.add_argument(
         '--seed',
