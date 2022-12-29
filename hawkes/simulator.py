@@ -29,11 +29,13 @@ class ThinningSimulator:
             h: str,
             end_time: int,
             active_thres_uni: int,
+            death_rate: float,
             seed: int):
         self.generator = np.random.default_rng(seed)
         self.m = m
         self.lam_exp = lam_exp
         self.active_thres_uni = active_thres_uni
+        self.death_rate = death_rate
         self.lam_uni = 1/active_thres_uni
         self.end_time = end_time
         self.sigma = lambda t: 20 if t <= 10 else 0
@@ -47,7 +49,7 @@ class ThinningSimulator:
         else:
             raise Exception(f'Function h={h} is not handled.')
     
-    def thinning(self) -> np.ndarray:
+    def thinning(self) -> tuple[np.ndarray, np.ndarray]:
         n = 0
         tn = 0
         self.time = 0
@@ -66,4 +68,4 @@ class ThinningSimulator:
                 n += 1
                 self.infected[tn] += 1
             gamma_bar = gamma_s
-        return self.infected
+        return self.infected, self.death_rate*self.infected

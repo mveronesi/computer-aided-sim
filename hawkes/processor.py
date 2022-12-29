@@ -12,23 +12,33 @@ def main(args):
         h=args.h,
         end_time=args.end_time,
         active_thres_uni=args.active_threshold,
+        death_rate=args.death_rate,
         seed=args.seed
     )
     start = time()
-    infections = simulator.thinning()
+    infections, deaths = simulator.thinning()
     execution_time = time() - start
     print(f'The simulation took {execution_time} seconds.')
     cum_infections = np.cumsum(infections)
-    _, ax = plt.subplots(1, 1, figsize=(7,7))
-    ax.plot(infections)
-    ax.set_xlabel('Time (days)')
-    ax.set_ylabel('Infections')
-    ax.set_title(f'Number of infections per day, h={args.h}')
-    _, ax = plt.subplots(1, 1, figsize=(7,7))
-    ax.plot(cum_infections)
-    ax.set_xlabel('Time (days)')
-    ax.set_ylabel('Cumulative infections')
-    ax.set_title(f'Cumulative number of infections, h={args.h}')
+    cum_deaths = np.cumsum(deaths)
+    _, ax = plt.subplots(1, 2, figsize=(14,7))
+    ax[0].plot(infections)
+    ax[0].set_xlabel('Time (days)')
+    ax[0].set_ylabel('Infections')
+    ax[0].set_title(f'Number of infections per day, h={args.h}')
+    ax[1].plot(deaths)
+    ax[1].set_xlabel('Time (days)')
+    ax[1].set_ylabel('Deaths')
+    ax[1].set_title(f'Number of deaths per day, h={args.h}')
+    _, ax = plt.subplots(1, 2, figsize=(14,7))
+    ax[0].plot(cum_infections)
+    ax[0].set_xlabel('Time (days)')
+    ax[0].set_ylabel('Cumulative infections')
+    ax[0].set_title(f'Cumulative number of infections, h={args.h}')
+    ax[1].plot(cum_deaths)
+    ax[1].set_xlabel('Time (days)')
+    ax[1].set_ylabel('Cumulative deaths')
+    ax[1].set_title(f'Cumulative number of deaths per day, h={args.h}')
     plt.show()
 
 
@@ -57,6 +67,12 @@ if __name__ == '__main__':
         type=int,
         default=20,
         help='Maximum number of days for considering a subject infective, in the case of h uniform.'
+    )
+    parser.add_argument(
+        '--death_rate',
+        type=float,
+        default=0.02,
+        help='Death rate of the desease.'
     )
     parser.add_argument(
         '--end_time',
