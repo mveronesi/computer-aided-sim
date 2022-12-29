@@ -1,17 +1,14 @@
 import numpy as np
-from time import time
+from tqdm import tqdm
 
 
-class HawkesSimulator:
+class ThinningSimulator:
 
     def update_active_points(self) -> None:
-        start = time()
         filter_T = lambda t: t if t-self.time <= self.active_thres\
              else None
         self.active_T = set(map(filter_T, self.active_T))
         self.active_T.discard(None)
-        elapsed = time() - start
-        print(f'Procedure completed in {elapsed} seconds.')
 
     def sum_h_exp(self) -> float:
         self.update_active_points()
@@ -20,7 +17,7 @@ class HawkesSimulator:
 
     def sum_h_uni(self) -> float:
         self.update_active_points()
-        return 0.05*len(self.active_T)
+        return self.beta*len(self.active_T)
 
     def __init__(
             self,
@@ -49,19 +46,21 @@ class HawkesSimulator:
         n = 0
         tn = 0
         self.time = 0
-        get_lam = lambda: self.sigma(self.time) + self.alpha*self.sum_h()
-        lam_bar = get_lam()
+        gamma = lambda: self.sigma(self.time) + self.alpha*self.sum_h()
+        gamma_bar = gamma()
+        pbar = tqdm(desc='Thinning', total=self.end_time)
         while self.time < self.end_time:
-            w = self.generator.exponential(1/lam_bar)
+            w = self.generator.exponential(1/gamma_bar)
             self.time = self.time + w
-            lam_s = get_lam()
+            pbar.update(w)
+            gamma_s = gamma()
             u = self.generator.uniform()
-            if u < lam_s / lam_bar:
+            if u < gamma_s / gamma_bar:
                 n += 1
                 tn = self.time
                 self.T.add(tn)
                 self.active_T.add(tn)
-            lam_bar = lam_s
+            gamma_bar = gamma_s
         if tn > self.end_time:
             self.T.discard(tn)
         return self.T
