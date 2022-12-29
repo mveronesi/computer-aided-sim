@@ -53,12 +53,21 @@ def Bteo(p: float, m: int) -> int:
     n = m**2 / (2*np.log(1/(1-p)))
     return int(np.ceil(np.log2(n)))
 
-def false_positive_probability(
+def test_hash_set(
         simulator: AntiPlagiarismSimulator,
-        bits: int) -> float:
+        bits: int) -> tuple[float, float]:
+    """
+    IN:
+        - a simulator
+        - the dimension of the fingerprint in bits
+    OUT:
+        - the probability of false positive
+        - the dimension of the fingerprint set
+    """
     hash_dim = int(np.exp2(bits))
     simulator.store_hash_sentences(hash_dim=hash_dim)
-    return len(simulator.distinct_hash_sentences) / hash_dim
+    size = asizeof(simulator.distinct_hash_sentences)
+    return len(simulator.distinct_hash_sentences) / hash_dim, size
 
 
 def theoretical_false_positive(m: int, n: int, k: int) -> float:
@@ -126,8 +135,8 @@ def main(args):
         p=0.5,
         m=len(simulator.distinct_sentences)
         )
-    false_positive_prob = \
-        false_positive_probability(
+    false_positive_prob, size = \
+        test_hash_set(
             simulator=simulator,
             bits=bexp
             )
@@ -136,22 +145,26 @@ def main(args):
     print(f'The false positive probability, when the bits used \
 for the fingerprint is {bexp}, is in the order of magnitude \
 of 10^{order_of_magnitude(false_positive_prob)}.')
+    print(f'The size of the fingerprint set, with {bexp} bits, is {size/1024:.2f} KB')
 
     print('\n##### Bit string array #####')
     bits_exps = np.arange(start=19, stop=24, dtype=int)
     false_positive_prob = np.empty_like(bits_exps, dtype=float)
     theoretical_false_positive_prob = np.empty_like(bits_exps, dtype=float)
+    theoretical_memory = np.empty_like(bits_exps, dtype=float)
+    effective_memory = np.empty_like(bits_exps, dtype=float)
     for i in range(len(bits_exps)):
-        p = false_positive_probability(
+        p, _ = test_hash_set(
             simulator=simulator,
             bits=bits_exps[i]
             )
         false_positive_prob[i] = p
-        theoretical_false_positive_prob[i] = theoretical_false_positive(
-            m=len(simulator.distinct_sentences),
-            n=int(np.exp2(bits_exps[i])),
-            k=1
-        )
+        m=len(simulator.distinct_sentences)
+        n=int(np.exp2(bits_exps[i]))
+        theoretical_false_positive_prob[i] = 1 - (1-1/n)**m
+        a = np.zeros(shape=(n,), dtype=bool)
+        effective_memory[i] = asizeof(a) / 1024
+        theoretical_memory[i] = n / 1024
     _, ax = plt.subplots(1, 1, figsize=(7,7))
     ax.plot(
         bits_exps,
@@ -172,7 +185,14 @@ of 10^{order_of_magnitude(false_positive_prob)}.')
         ('Theoretical false positive probability',
         'Estimated false positive probability',)
         )
-
+    _, ax = plt.subplots(1, 1, figsize=(7,7))
+    ax.plot(bits_exps, theoretical_memory, color='orange')
+    ax.scatter(bits_exps, effective_memory, marker='o', color='black')
+    ax.set_xlabel('Exponent of the size (2^x)')
+    ax.set_ylabel('Size KB')
+    ax.set_xticks(bits_exps)
+    ax.legend(('Theoretical size', 'Effective size',))
+    ax.set_title('Size of bitstring arrays and bloom filters')
     print('\n##### Bloom filters #####')
     k_opts = np.empty_like(bits_exps, dtype=int)
     _, ax = plt.subplots(1, 1, figsize=(7, 7))
