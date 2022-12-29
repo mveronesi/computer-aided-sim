@@ -18,9 +18,8 @@ class ThinningSimulator:
     def sum_h_uni(self) -> float:
         time = int(self.time)
         start = max(0, time - self.active_thres_uni)
-        active_points = self.infected[start:time]
-        total = active_points.sum()
-        return self.lam_uni*total
+        active_points = self.infected[start:time].sum()
+        return self.lam_uni*active_points
 
     def __init__(
             self,
@@ -50,9 +49,7 @@ class ThinningSimulator:
             raise Exception(f'Function h={h} is not handled.')
     
     def thinning(self) -> tuple[np.ndarray, np.ndarray]:
-        n = 0
-        tn = 0
-        self.time = 0
+        self.time = 0.0
         gamma = lambda: self.sigma(self.time) + self.m*self.sum_h()
         gamma_bar = gamma()
         pbar = tqdm(desc='Thinning', total=self.end_time)
@@ -65,7 +62,6 @@ class ThinningSimulator:
             tn = int(self.time)
             if tn < self.end_time and \
                     u < gamma_s / gamma_bar:
-                n += 1
                 self.infected[tn] += 1
             gamma_bar = gamma_s
         return self.infected, self.death_rate*self.infected
