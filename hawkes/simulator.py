@@ -4,14 +4,9 @@ from tqdm import tqdm
 
 class ThinningSimulator:
 
-    def get_active_points(self) -> np.ndarray:
-        time = int(self.time)
-        start = max(0, time - self.active_thres)
-        return self.infected[start:time]
-
     def sum_h_exp(self) -> float:
-        h_func_exp = lambda t, n: n*self.beta*np.exp(-self.beta*t)
-        active_points = self.get_active_points()
+        h_func_exp = lambda t, n: n*self.lam_exp*np.exp(-self.lam_exp*t)
+        active_points = self.infected[:int(self.time)]
         time = np.arange(
             start=len(active_points),
             stop=0,
@@ -21,22 +16,25 @@ class ThinningSimulator:
         return h_func_exp(time, active_points).sum()
 
     def sum_h_uni(self) -> float:
-        active_points = self.get_active_points()
+        time = int(self.time)
+        start = max(0, time - self.active_thres_uni)
+        active_points = self.infected[start:time]
         total = active_points.sum()
-        return 0.05*total
+        return self.lam_uni*total
 
     def __init__(
             self,
-            alpha: int,
-            beta: float,
+            m: int,
+            lam_exp: float,
             h: str,
             end_time: int,
-            active_thres: int,
+            active_thres_uni: int,
             seed: int):
         self.generator = np.random.default_rng(seed)
-        self.alpha = alpha
-        self.beta = beta
-        self.active_thres = active_thres
+        self.m = m
+        self.lam_exp = lam_exp
+        self.active_thres_uni = active_thres_uni
+        self.lam_uni = 1/active_thres_uni
         self.end_time = end_time
         self.sigma = lambda t: 20 if t <= 10 else 0
         self.infected = np.zeros(shape=(end_time,), dtype=int)
@@ -53,7 +51,7 @@ class ThinningSimulator:
         n = 0
         tn = 0
         self.time = 0
-        gamma = lambda: self.sigma(self.time) + self.alpha*self.sum_h()
+        gamma = lambda: self.sigma(self.time) + self.m*self.sum_h()
         gamma_bar = gamma()
         pbar = tqdm(desc='Thinning', total=self.end_time)
         while self.time < self.end_time and gamma_bar > 0:
