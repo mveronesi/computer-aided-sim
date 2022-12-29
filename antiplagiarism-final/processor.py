@@ -223,9 +223,10 @@ of 10^{order_of_magnitude(false_positive_prob)}.')
             size=size
         )
         pr_false_positive_exp[i] = (bloom_filter.sum() / size) ** k
-    ax.plot(bits_exps, pr_false_positive_teo)
+    ax.plot(bits_exps, pr_false_positive_teo, linestyle='dashed')
     ax.plot(bits_exps, pr_false_positive_exp)
     ax.set_yscale('log')
+    ax.set_xticks(bits_exps)
     ax.set_ylabel('Pr false positive')
     ax.set_xlabel('Exponent of the number of bits')
     ax.legend(('Theoretical', 'Experimental',))
