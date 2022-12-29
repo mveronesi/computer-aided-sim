@@ -23,7 +23,7 @@ class ThinningSimulator:
 
     def intervention_factor(self) -> float:
         rho = 1
-        if self.interventions and self.time > 20:
+        if self.interventions and self.time >= 20:
             infections = self.infected[int(self.time)-1]
             deaths = int(np.ceil(self.death_rate*infections))
             rho = max(1, deaths / 100)
