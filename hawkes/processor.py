@@ -5,6 +5,8 @@ import numpy as np
 import atexit
 from time import time
 from scipy import stats
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 
 
 class SeedGenerator:
@@ -13,10 +15,11 @@ class SeedGenerator:
         self.low = k
         self.high = k**3
 
-    def __call__(self) -> int:
+    def __call__(self) -> np.ndarray:
         return self.generator.integers(
             low=self.low,
-            high=self.high
+            high=self.high,
+            size=(self.low,)
             )
 
 
@@ -33,16 +36,12 @@ def confidence_interval(
             return mean, *stats.norm(confidence, mean, std)
 
 
-def main(args):
-    k = args.k
-    get_seed = SeedGenerator(k=k, seed=args.seed)
-    total_infections = np.zeros(shape=(args.end_time, args.k,), dtype=np.int64)
-    total_deaths = np.zeros_like(total_infections)
-    total_cum_infections = np.zeros_like(total_infections)
-    total_cum_deaths = np.zeros_like(total_infections)
-    for i in range(k):
-        print(f'Experiment n. {i}')
-        simulator = ThinningSimulator(
+def experiment(
+        seed: int,
+        args
+        ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    print(f'Experiment with seed={seed}')
+    simulator = ThinningSimulator(
             m=args.m,
             lam_exp=args.lam,
             h=args.h,
@@ -50,18 +49,47 @@ def main(args):
             active_thres_uni=args.active_threshold,
             death_rate=args.death_rate,
             interventions=args.interventions,
-            seed=get_seed()
+            seed=seed
         )
-        start = time()
-        infections, deaths = simulator.thinning()
-        execution_time = time() - start
-        print(f'The simulation took {execution_time} seconds.')
-        cum_infections = np.cumsum(infections)
-        cum_deaths = np.cumsum(deaths)
-        total_infections[:, i] = infections
-        total_cum_infections[:, i] = cum_infections
-        total_deaths[:, i] = deaths
-        total_cum_deaths[:, i] = cum_deaths
+    infections, deaths = simulator.thinning()
+    cum_infections = np.cumsum(infections)
+    cum_deaths = np.cumsum(deaths)
+    return infections, deaths, cum_infections, cum_deaths
+
+def plot(ax, x, y, confidence):
+    ax.fill_between(
+        x=x,
+        y1=y[:, 1],
+        y2=y[:, 2],
+        color='lightblue'
+        )
+    ax.plot(
+        y[:, 0],
+        color='black',
+        linestyle='dashed'
+    )
+    ax.legend((f'{confidence} confidence interval', 'value'))
+
+
+def main(args):
+    k = args.k
+    get_seeds = SeedGenerator(k=k, seed=args.seed)
+    seeds = get_seeds()
+    total_infections = np.zeros(shape=(args.end_time, args.k,), dtype=np.int64)
+    total_deaths = np.zeros_like(total_infections)
+    total_cum_infections = np.zeros_like(total_infections)
+    total_cum_deaths = np.zeros_like(total_infections)
+    frozen_experiment = partial(experiment, args=args)
+    start = time()
+    with ThreadPoolExecutor() as executor:
+            results = executor.map(frozen_experiment, seeds)
+    elapsed_time = time() - start
+    print(f'Done {k} experiments, took {elapsed_time} seconds.')
+    for i, result in enumerate(results):
+        total_infections[:, i] = result[0]
+        total_cum_infections[:, i] = result[2]
+        total_deaths[:, i] = result[1]
+        total_cum_deaths[:, i] = result[3]
     avg_infections = np.empty(shape=(args.end_time, 3,), dtype=np.float64)
     avg_deaths = np.empty_like(avg_infections)
     avg_cum_infections = np.empty_like(avg_infections)
@@ -83,26 +111,22 @@ def main(args):
             values=total_cum_deaths[i, :],
             confidence=args.confidence
         )
+    times = np.arange(args.end_time)
     _, ax = plt.subplots(1, 2, figsize=(14,7))
-    ax[0].fill_between(
-        x=np.arange(args.end_time),
-        y1=avg_infections[:, 1],
-        y2=avg_infections[:, 2]
-        )
-    ax[0].plot(avg_infections[:, 0])
+    plot(ax=ax[0], x=times, y=avg_infections, confidence=args.confidence)
     ax[0].set_xlabel('Time (days)')
     ax[0].set_ylabel('Infections')
     ax[0].set_title(f'Number of infections per day, h={args.h}')
-    ax[1].plot(avg_deaths)
+    plot(ax=ax[1], x=times, y=avg_deaths, confidence=args.confidence)
     ax[1].set_xlabel('Time (days)')
     ax[1].set_ylabel('Deaths')
     ax[1].set_title(f'Number of deaths per day, h={args.h}')
     _, ax = plt.subplots(1, 2, figsize=(14,7))
-    ax[0].plot(avg_cum_infections)
+    plot(ax=ax[0], x=times, y=avg_cum_infections, confidence=args.confidence)
     ax[0].set_xlabel('Time (days)')
     ax[0].set_ylabel('Cumulative infections')
     ax[0].set_title(f'Cumulative number of infections, h={args.h}')
-    ax[1].plot(avg_cum_deaths)
+    plot(ax=ax[1], x=times, y=avg_cum_deaths, confidence=args.confidence)
     ax[1].set_xlabel('Time (days)')
     ax[1].set_ylabel('Cumulative deaths')
     ax[1].set_title(f'Cumulative number of deaths per day, h={args.h}')
@@ -156,13 +180,13 @@ if __name__ == '__main__':
     parser.add_argument(
         '--k',
         type=int,
-        default=5,
+        default=10,
         help='Number of times to repeat the experiments.'
     )
     parser.add_argument(
         '--confidence',
         type=float,
-        default=0.95,
+        default=0.99,
         help='Size of the confidence interval.'
     )
     parser.add_argument(

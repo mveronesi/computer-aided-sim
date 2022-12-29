@@ -44,6 +44,7 @@ class ThinningSimulator:
             seed: int):
         self.generator = np.random.default_rng(seed)
         self.m = m
+        self.seed = seed
         self.lam_exp = lam_exp
         self.active_thres_uni = active_thres_uni
         self.death_rate = death_rate
@@ -70,7 +71,7 @@ class ThinningSimulator:
         self.time = 0.0
         gamma = lambda: self.sigma(self.time) + self.m/self.rho()*self.sum_h()
         gamma_bar = gamma()
-        pbar = tqdm(desc='Thinning', total=self.end_time)
+        pbar = tqdm(desc=f'Thinning seed={self.seed}', total=self.end_time)
         while self.time < self.end_time and gamma_bar > 0:
             w = self.generator.exponential(1/gamma_bar)
             self.time = self.time + w
