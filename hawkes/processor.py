@@ -84,7 +84,7 @@ def experiment(seed_generator: SeedGenerator, k: int, args):
     frozen_experiment = partial(single_experiment, args=args)
     start = time()
     with ThreadPoolExecutor() as executor:
-            results = executor.map(frozen_experiment, seed_generator(args.k))
+        results = executor.map(frozen_experiment, seed_generator(args.k))
     elapsed_time = time() - start
     print(f'Done {k} experiments, took {elapsed_time} seconds, unpacking results...')
     for i, result in enumerate(results):
@@ -169,6 +169,7 @@ def main(args):
         args.intervention_factor = 1
         args.end_time = 100
         experiment(seed_generator=generator, k=args.k, args=args)
+        plt.show(block=False)
     print('Part 2')
     args.h = 'uniform'
     args.interventions = True

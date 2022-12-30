@@ -72,14 +72,17 @@ class ThinningSimulator:
         self.time = 0.0
         gamma = lambda: self.sigma(self.time) + self.m/self.rho()*self.sum_h()
         gamma_bar = gamma()
-        pbar = tqdm(desc=f'Thinning seed={self.seed}', total=self.end_time)
+        progress_bar = tqdm(desc=f'Thinning seed={self.seed}', total=self.end_time)
         while self.time < self.end_time and gamma_bar > 0:
+            old_time = int(self.time)
             w = self.generator.exponential(1/gamma_bar)
             self.time = self.time + w
-            pbar.update(w)
+            tn = int(self.time)
+            diff_time = tn - old_time
+            if diff_time > 0:
+                progress_bar.update(diff_time)
             gamma_s = gamma()
             u = self.generator.uniform()
-            tn = int(self.time)
             if tn < self.end_time and \
                     u < gamma_s / gamma_bar:
                 self.infected[tn] += 1
