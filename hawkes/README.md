@@ -4,23 +4,18 @@ Re-create my virtual environment using
 
 ```pip install -r requirements.txt```
 
-To have a list of all the available parameter type
+To see the list of all the available parameter run
 
 ```python processor.py --help```
 
-To obtain the results required in the first part
-of the assignment, use the following two commands
+To obtain the results in the assignment, just run the
+code using the default parameters, i.e., run the command
 
-```python processor.py --h uniform```
-
-```python processor.py --h exponential```
+```python processor.py```
 
 Please note that all the results include a .99 confidence
-interval obtained with 15 runs.
+interval obtained with 10 runs (using a CPU with 16 cores).
 Since the speed at which the experiments complete strongly
-depend on the number of virtual threads of your CPU,
+depend on the number of virtual cores of your CPU,
 feel free to lower the parameters ```--k``` to speed-up the execution.
-Obviously, this will result in wider intervals, but you can also
-decrease ```--confidence``` to .95, in order to make them narrow again. 
-
-
+Obviously, this will lead to results in wider confidence intervals. 
