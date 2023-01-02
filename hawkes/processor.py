@@ -45,10 +45,10 @@ def single_experiment(
     print(f'Experiment with seed={seed}')
     simulator = ThinningSimulator(
             m=args.m,
-            lam_exp=args.lam,
+            lam_exp=args.lam_exp,
             h=args.h,
             end_time=args.end_time,
-            active_thres_uni=args.active_threshold,
+            lam_uni=args.lam_uni,
             death_rate=args.death_rate,
             interventions=args.interventions,
             intervention_factor=args.intervention_factor,
@@ -75,7 +75,7 @@ def plot(ax, x, y, confidence):
     ax.set_xlabel('Time (days)')
 
 
-def experiment(seed_generator: SeedGenerator, k: int, args):
+def experiment(seed_generator: SeedGenerator, args, save: bool):
     total_infections = np.zeros(shape=(args.end_time, args.k,), dtype=np.int64)
     total_deaths = np.zeros_like(total_infections)
     total_cum_infections = np.zeros_like(total_infections)
@@ -86,7 +86,7 @@ def experiment(seed_generator: SeedGenerator, k: int, args):
     with ThreadPoolExecutor() as executor:
         results = executor.map(frozen_experiment, seed_generator(args.k))
     elapsed_time = time() - start
-    print(f'Done {k} experiments, took {elapsed_time} seconds, unpacking results...')
+    print(f'Done {args.k} experiments, took {elapsed_time} seconds, unpacking results...')
     for i, result in enumerate(results):
         total_infections[:, i] = result[0]
         total_cum_infections[:, i] = result[2]
@@ -135,28 +135,52 @@ def experiment(seed_generator: SeedGenerator, k: int, args):
     plot(ax=ax[1], x=times, y=avg_cum_deaths, confidence=args.confidence)
     ax[1].set_ylabel('Cumulative deaths')
     ax[1].set_title(f'Cumulative number of deaths per day, h={args.h}')
-    output_info = vars(args)
-    if args.interventions == True:
+    output = dict()
+    output['delta'] = args.intervention_factor
+    if args.interventions:
         _, ax = plt.subplots(1, 1, figsize=(7, 7))
         plot(ax=ax, x=times, y=avg_rho, confidence=args.confidence)
         ax.plot(avg_rho[:, 0])
         ax.set_ylabel('Rho^2(t)')
         ax.set_xlabel('Time (days)')
         ax.set_title('Factor of interventions w.r.t. time')
-        cost = avg_rho[20:, 0].sum()
+        costs = total_rho.sum(axis=0)
+        cost, cost_conf_int_left, cost_conf_int_right = \
+            confidence_interval(
+                values=costs,
+                confidence=args.confidence
+            )
         yearly_death = avg_cum_deaths[-1, 0]
+        yearly_death_conf_int = tuple(avg_cum_deaths[-1, 1:3])
         print(f'The total cost of the interventions is {cost}')
         print(f'The total number of death is {yearly_death}')   
-        output_info['cost'] = cost
-        output_info['deaths'] = yearly_death
-    df = pd.DataFrame(output_info, index=[0])
-    output_path = 'results.csv'
-    df.to_csv(
-        output_path,
-        mode='a',
-        header=not os.path.exists(output_path),
-        index=False
-        )
+        output['cost'] = cost
+        output['cost_conf_int_left'] = cost_conf_int_left
+        output['cost_conf_int_right'] = cost_conf_int_right
+        output['deaths'] = yearly_death
+        output['deaths_conf_int_left'] = yearly_death_conf_int[0]
+        output['deaths_conf_int_right'] = yearly_death_conf_int[1]
+    if save:
+        df = pd.DataFrame(output, index=[0])
+        output_path = 'results.csv'
+        df.to_csv(
+            output_path,
+            mode='a',
+            header=not os.path.exists(output_path),
+            index=False
+            )
+
+
+def search_delta(args):
+    deltas = (20, 30, 32, 33, 34, 35, 40, 50,)
+    generator = SeedGenerator(k=args.k, seed=args.seed)
+    args.h = 'uniform'
+    args.interventions = True
+    args.end_time = 365
+    for delta in deltas:
+        print(f'Using delta={delta}')
+        args.intervention_factor = delta
+        experiment(seed_generator=generator, args=args, save=True)
 
 
 def main(args):
@@ -168,14 +192,14 @@ def main(args):
         args.interventions = False
         args.intervention_factor = 1
         args.end_time = 100
-        experiment(seed_generator=generator, k=args.k, args=args)
+        experiment(seed_generator=generator, args=args, save=False)
         plt.show(block=False)
     print('Part 2')
     args.h = 'uniform'
     args.interventions = True
     args.intervention_factor = tmp
     args.end_time = 365
-    experiment(seed_generator=generator, k=args.k, args=args)
+    experiment(seed_generator=generator, args=args, save=False)
     plt.show(block=False)
     input('Press Enter to close all the figures.')
 
@@ -190,10 +214,16 @@ if __name__ == '__main__':
         help='m parameter.'
     )
     parser.add_argument(
-        '--lam',
+        '--lam_exp',
         type=float,
         default=0.1,
         help='Lambda parameter for h exponential.'
+    )
+    parser.add_argument(
+        '--lam_uni',
+        type=float,
+        default=0.05,
+        help='Lambda parameter for h uniform.'
     )
     parser.add_argument(
         '--active_threshold',
@@ -210,7 +240,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--k',
         type=int,
-        default=10,
+        default=15,
         help='Number of times to repeat the experiments.'
     )
     parser.add_argument(
@@ -231,4 +261,5 @@ if __name__ == '__main__':
         default=42,
         help='Seed for the random simulator.'
     )
-    main(parser.parse_args())
+    args = parser.parse_args()
+    main(args)

@@ -38,7 +38,7 @@ class ThinningSimulator:
             lam_exp: float,
             h: str,
             end_time: int,
-            active_thres_uni: int,
+            lam_uni: float,
             death_rate: float,
             interventions: bool,
             intervention_factor: int,
@@ -47,11 +47,11 @@ class ThinningSimulator:
         self.m = m
         self.seed = seed
         self.lam_exp = lam_exp
-        self.active_thres_uni = active_thres_uni
+        self.lam_uni = lam_uni
+        self.active_thres_uni = int(1/lam_uni)
         self.death_rate = death_rate
         self.interventions = interventions
         self.intervention_factor = intervention_factor
-        self.lam_uni = 1/active_thres_uni
         self.end_time = end_time
         self.sigma = lambda t: 20 if t <= 10 else 0
         self.infected = np.zeros(shape=(end_time,), dtype=np.int64)
