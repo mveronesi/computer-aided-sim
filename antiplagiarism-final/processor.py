@@ -4,6 +4,7 @@ import numpy as np
 from argparse import ArgumentParser
 from matplotlib import pyplot as plt
 import atexit
+from tqdm import tqdm
 
 
 def order_of_magnitude(number: float) -> int:
@@ -13,6 +14,9 @@ def order_of_magnitude(number: float) -> int:
 def preliminary_study(simulator: AntiPlagiarismSimulator) \
      -> tuple[float, float]:
     """
+    IN:
+        - a simulator object with the text
+          already preprocessed inside.
     OUT:
         - the number of distinct sentences stored
         - the average size of each sentences in bytes
@@ -29,9 +33,12 @@ def preliminary_study(simulator: AntiPlagiarismSimulator) \
 
 def Bexp(simulator: AntiPlagiarismSimulator) -> int:
     """
+    IN:
+        - a simulator object with the text
+          already preprocessed inside.
     OUT:
-        - Bexp: the number of bits for the fingerprint
-                to observe no collisions.
+        - Bexp: the number of bits to be used
+                for the fingerprint to observe no collisions.
     """
     for n_bits in range(30, 40):
         simulator.store_hash_sentences(hash_dim=int(np.exp2(n_bits)))
@@ -79,10 +86,19 @@ def theoretical_false_positive(m: int, n: int, k: int) -> float:
     OUT:
         - p: probability of false positive
     """
-    return (1 - np.exp(-k*m / (2*n)))**k
+    return (1 - np.exp(-k*m / n))**k
 
 
 def k_opt(m: int, n: int) -> int:
+    """
+    IN:
+        - m: the number of samples to be stored
+             in the bloom filter.
+        - n: the size of the fingerprint.
+    OUT:
+        - the optimal number of hash functions to
+          be used in these settings.
+    """
     return int(np.ceil((n/m)*np.log(2)))
 
 
@@ -209,7 +225,7 @@ of 10^{order_of_magnitude(false_positive_prob)}.')
     pr_false_positive_teo = np.empty_like(bits_exps, dtype=float)
     pr_false_positive_exp = np.empty_like(bits_exps, dtype=float)
     _, ax = plt.subplots(1, 1, figsize=(7,7))
-    for i in range(len(bits_exps)):
+    for i in tqdm(range(len(bits_exps))):
         k = k_opts[i]
         b = bits_exps[i]
         size = int(np.exp2(b))
@@ -223,14 +239,14 @@ of 10^{order_of_magnitude(false_positive_prob)}.')
             size=size
         )
         pr_false_positive_exp[i] = (bloom_filter.sum() / size) ** k
-    ax.plot(bits_exps, pr_false_positive_teo, linestyle='dashed')
-    ax.plot(bits_exps, pr_false_positive_exp)
+    ax.plot(bits_exps, pr_false_positive_teo)
+    ax.scatter(bits_exps, pr_false_positive_exp, marker='x', color='black', s=100)
     ax.set_yscale('log')
     ax.set_xticks(bits_exps)
     ax.set_ylabel('Pr false positive')
     ax.set_xlabel('Exponent of the number of bits')
     ax.legend(('Theoretical', 'Experimental',))
-    ax.set_title('Probability of false positive using the optimal number of hash functions')
+    ax.set_title('Probability of false positive with bloom filters,\nusing the optimal number of hash functions')
     b = bits_exps[-1]
     k = k_opts[-1]
     size = int(np.exp2(b))

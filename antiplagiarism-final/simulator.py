@@ -40,6 +40,17 @@ class AntiPlagiarismSimulator:
             s: str,
             hash_dim: int,
             shift: int|None) -> int:
+        """
+        IN:
+            - s, the string to be hashed
+            - hash_dim: dimension of the hash functions equal to 2^b,
+                        where b is the number of bits used to store the hash.
+            - shift: parameter for applying a deterministic change in the
+                     input string, used for emulating different hash
+                     functions using every time the same.
+        OUT:
+            - integer value representing the fingerprint of the input string.
+        """
         s = s+str(shift) if shift is not None else s
         s_hash = hashlib.md5(s.encode('utf-8'))
         int_hash = int(s_hash.hexdigest(), 16)
@@ -54,6 +65,10 @@ class AntiPlagiarismSimulator:
         self.process_text()
 
     def process_text(self) -> None:
+        """
+        Setup the simulator, i.e., extract from the raw text
+        all the distinct sentences of the given size window_size.
+        """
         self.text_lines = pd.Series(self.text_lines) \
                     .apply(self.remove_punctuation) \
                     .apply(lambda s: str.lower(s[:-1]))
@@ -74,7 +89,17 @@ class AntiPlagiarismSimulator:
             self,
             hash_dim: int,
             shift: int|None = None
-            ) -> np.ndarray:
+            ) -> set:
+        """
+        IN:
+            - hash_dim: dimension of the hash functions equal to 2^b,
+                        where b is the number of bits used to store the hash.
+            - shift: parameter for applying a deterministic change in the
+                     input string, used for emulating different hash
+                     functions using every time the same.
+        OUT:
+            - the set containing all the distinct fingerprints.
+        """
         self.hash_sentences = self.distinct_sentences.apply(
             lambda s: AntiPlagiarismSimulator.compute_hash(s, hash_dim, shift)
             )
